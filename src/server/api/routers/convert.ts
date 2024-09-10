@@ -9,7 +9,7 @@ export const convertRouter = createTRPCRouter({
     .input(
       z.object({
         image: z.string(),
-        format: z.enum(["webp", "ico", "base64"]),
+        format: z.enum(["webp", "ico", "png", "jpeg"]),
         quality: z.number().min(1).max(100).optional(),
       }),
     )
@@ -35,8 +35,16 @@ export const convertRouter = createTRPCRouter({
             greyscale: false,
           });
           return `data:image/x-icon;base64,${result.toString("base64")}`;
-        case "base64":
-          return input.image; // It's already in base64 format
+        case "png":
+          result = await sharp(buffer)
+            .png({ quality: input.quality ?? 80 })
+            .toBuffer();
+          return `data:image/png;base64,${result.toString("base64")}`;
+        case "jpeg":
+          result = await sharp(buffer)
+            .jpeg({ quality: input.quality ?? 80 })
+            .toBuffer();
+          return `data:image/jpeg;base64,${result.toString("base64")}`;
         default:
           throw new Error("Unsupported format");
       }

@@ -6,10 +6,9 @@ import CopyTextComponent from "~/components/ui/copy-text";
 import { Label } from "~/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Slider } from "~/components/ui/slider";
-import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/trpc/react";
 
-type ConversionType = "webp" | "ico";
+type ConversionType = "webp" | "ico" | "png" | "jpeg";
 
 export default function ConverterComponent() {
   const [files, setFiles] = useState<File[]>([]);
@@ -98,6 +97,14 @@ export default function ConverterComponent() {
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="ico" id="ico" />
             <Label htmlFor="ico">ICO</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="png" id="png" />
+            <Label htmlFor="png">PNG</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="jpeg" id="jpeg" />
+            <Label htmlFor="jpeg">JPEG</Label>
           </div>
         </RadioGroup>
       </div>
