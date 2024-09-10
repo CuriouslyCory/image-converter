@@ -2,13 +2,14 @@
 import { DownloadIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
+import CopyTextComponent from "~/components/ui/copy-text";
 import { Label } from "~/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Slider } from "~/components/ui/slider";
 import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/trpc/react";
 
-type ConversionType = "base64" | "webp" | "ico";
+type ConversionType = "webp" | "ico";
 
 export default function ConverterComponent() {
   const [files, setFiles] = useState<File[]>([]);
@@ -21,7 +22,6 @@ export default function ConverterComponent() {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      console.log("files updated");
       setFiles(Array.from(event.target.files));
     }
   };
@@ -92,10 +92,6 @@ export default function ConverterComponent() {
           onValueChange={(value) => setConversionType(value as ConversionType)}
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="base64" id="base64" />
-            <Label htmlFor="base64">Base64</Label>
-          </div>
-          <div className="flex items-center space-x-2">
             <RadioGroupItem value="webp" id="webp" />
             <Label htmlFor="webp">WebP</Label>
           </div>
@@ -137,7 +133,7 @@ export default function ConverterComponent() {
                 />
                 <a
                   href={img}
-                  download={`converted-${index}.${conversionType === "base64" ? "txt" : conversionType}`}
+                  download={`converted-${index}.${conversionType}`}
                   className="absolute right-1 top-1 rounded-full bg-white p-1"
                 >
                   <DownloadIcon size={16} />
@@ -147,9 +143,12 @@ export default function ConverterComponent() {
           </div>
         </div>
       )}
-      <div>
-        <Textarea value={base64}></Textarea>
-      </div>
+      {base64.length > 0 && (
+        <div className="mt-6">
+          <Label>Base64</Label>
+          <CopyTextComponent value={base64}></CopyTextComponent>
+        </div>
+      )}
     </div>
   );
 }
