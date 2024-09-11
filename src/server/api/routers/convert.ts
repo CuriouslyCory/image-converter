@@ -3,6 +3,8 @@ import sharp from "sharp";
 import imageToIco from "image-to-ico";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { ratelimit } from "~/server/utils/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const convertRouter = createTRPCRouter({
   convertImage: publicProcedure
@@ -13,7 +15,21 @@ export const convertRouter = createTRPCRouter({
         quality: z.number().min(1).max(100).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Rate limiting
+      const ip =
+        ctx.headers.get("x-forwarded-for") ??
+        ctx.headers.get("x-real-ip") ??
+        "unknown";
+      const { success, remaining } = await ratelimit.limit(ip);
+      if (!success) {
+        throw new TRPCError({
+          message: "Rate limit exceeded",
+          code: "TOO_MANY_REQUESTS",
+        });
+      }
+
+      // Convert the image
       const buffer = Buffer.from(input.image.split(",")[1]!, "base64");
       let result: Buffer | string;
 
