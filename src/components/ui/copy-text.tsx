@@ -9,7 +9,7 @@ interface ReadOnlyTextAreaProps {
   value: string;
 }
 
-export default function CopyTextComponent({ value }: ReadOnlyTextAreaProps) {
+export default function CopyText({ value }: ReadOnlyTextAreaProps) {
   const [isCopied, setIsCopied] = useState(false);
 
   const copyToClipboard = async () => {

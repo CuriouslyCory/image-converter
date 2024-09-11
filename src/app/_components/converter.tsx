@@ -2,7 +2,7 @@
 import { DownloadIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
-import CopyTextComponent from "~/components/ui/copy-text";
+import CopyText from "~/components/ui/copy-text";
 import { Label } from "~/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Slider } from "~/components/ui/slider";
@@ -71,7 +71,7 @@ export default function ConverterComponent() {
           onChange={handleFileChange}
           accept="image/*"
           multiple
-          className="file:bg-primary hover:file:bg-primary/80 block w-full text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+          className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-primary/80"
         />
       </div>
       {files.length > 0 && (
@@ -153,7 +153,7 @@ export default function ConverterComponent() {
       {base64.length > 0 && (
         <div className="mt-6">
           <Label>Base64</Label>
-          <CopyTextComponent value={base64}></CopyTextComponent>
+          <CopyText value={base64}></CopyText>
         </div>
       )}
     </div>
