@@ -72,3 +72,12 @@ model VerificationToken {
 
     @@unique([identifier, token])
 }
+
+model RateLimit {
+    id         String   @id @default(cuid())
+    identifier String // IP address or user ID
+    createdAt  DateTime @default(now())
+    expiresAt  DateTime
+
+    @@index([identifier, expiresAt])
+}

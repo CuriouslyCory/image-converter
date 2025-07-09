@@ -21,7 +21,7 @@ export const convertRouter = createTRPCRouter({
         ctx.headers.get("x-forwarded-for") ??
         ctx.headers.get("x-real-ip") ??
         "unknown";
-      const { success, remaining } = await ratelimit.limit(ip);
+      const { success, remaining } = await ratelimit(ip);
       if (!success) {
         throw new TRPCError({
           message: "Rate limit exceeded",
