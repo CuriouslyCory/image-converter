@@ -77,7 +77,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Auth.js v5 uses a different API pattern. Instead of exporting authOptions and calling getServerSession(authOptions), you call NextAuth({ providers, adapter, callbacks }) which returns { handlers, auth, signIn, signOut }. The auth() function is the universal session getter that replaces getServerSession."
     },
     {
@@ -94,7 +94,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Auth.js v5 uses AUTH_SECRET instead of NEXTAUTH_SECRET and AUTH_URL instead of NEXTAUTH_URL. The env validation in src/env.js must be updated to match. The tRPC context in src/server/api/trpc.ts calls getServerAuthSession() which must be changed to auth()."
     },
     {
@@ -113,7 +113,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "The classic @trpc/react-query integration is still supported in tRPC v11 stable, so no need to migrate to @trpc/tanstack-react-query. The main risk is unstable_ prefixed APIs being renamed. Check the tRPC v11 changelog for any breaking changes from the RC."
     },
     {
@@ -135,7 +135,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Tailwind CSS 4 uses CSS-first configuration instead of JS config files. The @tailwind base/components/utilities directives are replaced with @import \"tailwindcss\". Custom theme values move into @theme {} blocks in CSS. Some utility classes may have been renamed. Check tailwind.config.ts for any custom theme configuration that needs to be migrated."
     },
     {
