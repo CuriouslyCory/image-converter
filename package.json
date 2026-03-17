@@ -12,6 +12,7 @@
     "dev": "next dev",
     "postinstall": "prisma generate",
     "lint": "next lint",
+    "ralph": "STORIES=$(jq '.userStories | length' .claude/skills/ralph/prd.json) && .claude/skills/ralph/scripts/ralph.sh $((STORIES + 4))",
     "start": "next start"
   },
   "dependencies": {
