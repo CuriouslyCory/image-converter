@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat /home/curiouslycory/workspace/active-personal/image-converter/*')",
+      "Bash(find:*)",
+      "Bash(find /home/curiouslycory/workspace/active-personal/image-converter*)",
+      "Bash(gh auth:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh pr view *)",
+      "Bash(git ls-files *)",
+      "Bash(grep:*)",
+      "Bash(ls -la /home/curiouslycory/workspace/active-personal/image-converter*)",
+      "Bash(ls /home/curiouslycory/workspace/active-personal/image-converter*)",
+      "Bash(pnpm build)",
+      "Bash(pnpm install)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm lint:fix)",
+      "Bash(pnpm typecheck)",
+      "Bash(npx prisma generate)",
+      "Skill(dev-browser:dev-browser)",
+      "WebFetch(domain:agentskills.io)",
+      "WebFetch(domain:ai-sdk.dev)",
+      "WebFetch(domain:authjs.dev)",
+      "WebFetch(domain:platejs.org)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:skills.sh)",
+      "WebSearch"
+    ]
+  }
+}
