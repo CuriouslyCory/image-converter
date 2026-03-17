@@ -154,7 +154,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "ESLint 9 uses flat config (eslint.config.js) instead of .eslintrc files. The eslint-config-next package for Next.js 16 should support flat config. If not, use @eslint/eslintrc compatibility wrapper. The typescript-eslint package provides a unified way to include TS rules in flat config."
     },
     {

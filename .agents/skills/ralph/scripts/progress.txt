@@ -20,6 +20,9 @@ Started: Tue Mar 17 04:07:53 PM MST 2026
 - Auth route handler: `export const { GET, POST } = handlers` from `~/server/auth`
 - Auth.js v5 env vars: use `AUTH_SECRET` and `AUTH_URL` (not `NEXTAUTH_*`)
 - tRPC v11 stable: use `httpBatchStreamLink` (not `unstable_httpBatchStreamLink`)
+- ESLint 9 flat config in `eslint.config.mjs` — uses `typescript-eslint` unified package (not separate `@typescript-eslint/parser` + `@typescript-eslint/eslint-plugin`)
+- `next lint` removed in Next.js 16 — use `eslint .` directly in lint script
+- `eslint-config-next` v16 exports flat config arrays (can be spread into `tseslint.config()`)
 
 ---
 
@@ -134,4 +137,28 @@ Started: Tue Mar 17 04:07:53 PM MST 2026
   - Turbopack (Next.js 16 default bundler) does NOT resolve `.js` extensions to `.ts` files like TypeScript does — always use extensionless imports for TS files
   - Top-level `await` in next.config.ts breaks Turbopack's require() — use synchronous `import` instead
   - Manual browser verification still needed for visual styling confirmation
+---
+
+## 2026-03-17 - US-008
+- Upgraded eslint from ^8.57.0 to ^9.39.4
+- Replaced `@typescript-eslint/eslint-plugin` + `@typescript-eslint/parser` with unified `typescript-eslint` ^8.57.1
+- Removed `@types/eslint` (no longer needed for ESLint 9)
+- Deleted `.eslintrc.cjs`, created `eslint.config.mjs` with ESLint 9 flat config format
+- Used `tseslint.config()` with `eslint-config-next/core-web-vitals` (already exports flat config in v16)
+- Included `recommendedTypeChecked` and `stylisticTypeChecked` from typescript-eslint
+- All custom rules preserved: consistent-type-imports, no-unused-vars with argsIgnorePattern, require-await off, no-misused-promises with checksVoidReturn attributes false
+- Updated lint script from `next lint` to `eslint .` (`next lint` removed in Next.js 16)
+- Fixed pre-existing code issues caught by new stricter rules:
+  - converter.tsx: moved `fileToBase64` declaration above its usage (react-hooks/immutability)
+  - nft-metadata-builder.tsx: replaced useEffect+setState with useMemo (react-hooks/set-state-in-effect)
+  - trpc.ts: used optional chain instead of `!ctx.session || !ctx.session.user` (prefer-optional-chain)
+- pnpm lint passes (0 errors, 2 pre-existing warnings), typecheck passes
+- Files changed: package.json, pnpm-lock.yaml, .eslintrc.cjs (deleted), eslint.config.mjs (new), src/app/_components/converter.tsx, src/app/_components/nft-metadata-builder.tsx, src/server/api/trpc.ts
+- **Learnings for future iterations:**
+  - `next lint` was removed in Next.js 16 — must use `eslint .` directly
+  - `eslint-config-next` v16 already exports flat config format (array of config objects), can be spread directly into `tseslint.config()`
+  - The unified `typescript-eslint` package replaces both `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin`
+  - Use `projectService: true` in parserOptions (replaces `project: true` for flat config)
+  - Must add `{ ignores: ["eslint.config.mjs"] }` to avoid the config file being type-checked by itself
+  - eslint-config-next v16 includes stricter react-hooks rules (immutability, set-state-in-effect) that may flag pre-existing code
 ---

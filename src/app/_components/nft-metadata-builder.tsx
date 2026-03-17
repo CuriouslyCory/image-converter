@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
@@ -40,12 +40,9 @@ export default function NFTMetadataBuilder() {
     attributes: [],
   });
 
-  const [jsonDataUri, setJsonDataUri] = useState("");
-
-  useEffect(() => {
+  const jsonDataUri = useMemo(() => {
     const jsonString = JSON.stringify(metadata, null, 2);
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(jsonString)}`;
-    setJsonDataUri(dataUri);
+    return `data:application/json;charset=utf-8,${encodeURIComponent(jsonString)}`;
   }, [metadata]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

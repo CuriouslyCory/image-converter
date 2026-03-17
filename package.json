@@ -11,7 +11,7 @@
     "db:studio": "prisma studio",
     "dev": "next dev",
     "postinstall": "prisma generate",
-    "lint": "next lint",
+    "lint": "eslint .",
     "ralph": "STORIES=$(jq '.userStories | length' .claude/skills/ralph/prd.json) && .claude/skills/ralph/scripts/ralph.sh $((STORIES + 4))",
     "start": "next start"
   },
@@ -48,15 +48,13 @@
     "zod": "^3.23.3"
   },
   "devDependencies": {
-    "@types/eslint": "^8.56.10",
     "@types/node": "^20.14.10",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.1.0",
-    "@typescript-eslint/parser": "^8.1.0",
     "dotenv": "^16.4.0",
-    "eslint": "^8.57.0",
+    "eslint": "^9.0.0",
     "eslint-config-next": "^16.1.0",
+    "typescript-eslint": "^8.57.1",
     "prettier": "^3.3.2",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "prisma": "^7.5.0",
