@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cat /home/curiouslycory/workspace/active-personal/image-converter/*')",
+      "Bash(cat /home/curiouslycory/workspace/active-personal/image-converter*')",
       "Bash(find:*)",
       "Bash(find /home/curiouslycory/workspace/active-personal/image-converter*)",
       "Bash(gh auth:*)",
@@ -25,6 +25,10 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:skills.sh)",
       "WebSearch"
+    ],
+    "additionalDirectories": [
+      "/home/curiouslycory/workspace/active-personal/image-converter",
+      "/home/curiouslycory/workspace/active-personal/image-converter/.claude/skills/ralph/scripts"
     ]
   }
 }
