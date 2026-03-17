@@ -19,7 +19,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Next.js 16 requires Node.js >= 20.9.0. The headers() function from next/headers became async in Next.js 15. The createContext function in src/trpc/server.ts wraps the headers() call and must handle the async change."
     },
     {
@@ -41,7 +41,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the official Prisma v7 migration guide. The prisma.config.ts must import dotenv/config at the top. The generator output path ./generated means the client is generated to prisma/generated/. Do NOT change src/server/db.ts yet - that is the next story."
     },
     {
@@ -58,7 +58,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "The generated client path depends on the output setting in schema.prisma. With output = \"./generated\", the import should be something like ../../prisma/generated/prisma/client.js relative to src/server/db.ts, or use the ~ path alias if it resolves correctly. Check src/server/auth.ts and src/server/api/trpc.ts for any @prisma/client imports that need updating."
     },
     {

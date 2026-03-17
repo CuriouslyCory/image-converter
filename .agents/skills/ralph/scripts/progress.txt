@@ -1,0 +1,62 @@
+# Ralph Progress Log
+Started: Tue Mar 17 04:07:53 PM MST 2026
+
+## Codebase Patterns
+- Next.js config is at `next.config.ts` (TypeScript, uses `NextConfig` type)
+- tRPC server context is in `src/trpc/server.ts`, uses `cache()` wrapper from React
+- Environment validation is in `src/env.js` and imported in `next.config.ts`
+- Project uses `~` path alias for `src/` directory
+- This is a T3 stack app (Next.js + tRPC + Prisma + NextAuth)
+- Prisma 7 generated client lives at `prisma/generated/client.js` — import PrismaClient from there, not `@prisma/client`
+- Prisma 7 requires a driver adapter (e.g., `PrismaPg` from `@prisma/adapter-pg`) passed to PrismaClient constructor
+- `prisma.config.ts` at repo root handles datasource URL and migration config (replaces `url` in schema.prisma)
+- Use `@prisma/adapter-pg` for regular PostgreSQL, NOT `@prisma/adapter-ppg` (that's for Prisma Postgres managed service)
+
+---
+
+## 2026-03-17 - US-001
+- Upgraded react/react-dom from ^18.3.1 to ^19.2.4
+- Upgraded next from 14.2.35 to ^16.1.0
+- Upgraded @types/react to ^19.0.0, @types/react-dom to ^19.0.0
+- Upgraded eslint-config-next to ^16.1.0
+- Upgraded @t3-oss/env-nextjs to ^0.11.1
+- Made `headers()` call async in `src/trpc/server.ts` (Next.js 15+ requires await)
+- Renamed `next.config.js` to `next.config.ts` with typed `NextConfig`
+- Files changed: package.json, pnpm-lock.yaml, src/trpc/server.ts, next.config.js → next.config.ts
+- **Learnings for future iterations:**
+  - `headers()` from `next/headers` is async in Next.js 15+, must be awaited
+  - The `createContext` function in `src/trpc/server.ts` wraps `headers()` — any changes to Next.js async APIs affect this
+  - Peer dependency warnings for eslint (needs ^9) and next-auth (needs next ^15) are expected — will be resolved in later stories
+  - sharp auto-rebuilt successfully for the new environment
+---
+
+## 2026-03-17 - US-002
+- Upgraded prisma (dev) and @prisma/client from ^6.11.1 to ^7.5.0
+- Added @prisma/adapter-pg ^7.5.0 as dependency (corrected from PRD's adapter-ppg — that's for Prisma Postgres managed service)
+- Added tsx ^4.19.0 as dev dependency, dotenv ^16.4.0 as dev dependency
+- Changed generator provider from `prisma-client-js` to `prisma-client` with `output = "./generated"`
+- Removed `url = env("DATABASE_URL")` from datasource db block (now in prisma.config.ts)
+- Created `prisma.config.ts` at repo root using `defineConfig` and `env` from `prisma/config`
+- Updated `src/server/db.ts` import from `@prisma/client` to generated client path and added PrismaPg adapter (required for Prisma 7 typecheck)
+- Added `/prisma/generated` to `.gitignore`
+- `prisma generate` succeeds, outputs to `prisma/generated/`
+- Typecheck passes
+- Files changed: package.json, pnpm-lock.yaml, prisma/schema.prisma, prisma.config.ts (new), src/server/db.ts, .gitignore
+- **Learnings for future iterations:**
+  - PRD specified `@prisma/adapter-ppg` but that's for Prisma Postgres (managed service). Regular PostgreSQL needs `@prisma/adapter-pg`
+  - Prisma 7 PrismaClient REQUIRES a driver adapter — you can't instantiate without one, so db.ts had to be updated in this story despite the PRD note
+  - The generated client path with `output = "./generated"` is `prisma/generated/client.js` (relative to schema location)
+  - `@prisma/client` re-exports from `.prisma/client/default` which doesn't exist when custom output is set — so imports MUST point to generated path
+  - `dotenv` package needed for `import "dotenv/config"` in prisma.config.ts
+---
+
+## 2026-03-17 - US-003
+- All acceptance criteria were already met by US-002 implementation
+- US-002 had to update src/server/db.ts with PrismaPg adapter and generated client import because Prisma 7 PrismaClient requires a driver adapter to even typecheck
+- Verified: no remaining `@prisma/client` imports in src/ — all use generated client path
+- Verified: prisma generate succeeds, typecheck passes
+- No additional files changed (beyond prd.json and progress.txt)
+- **Learnings for future iterations:**
+  - When PRD splits work across stories with tight dependencies (like Prisma schema + client), earlier stories may need to pull in later story work to maintain a green build
+  - Always verify with `grep` that no stale imports remain after a migration
+---
