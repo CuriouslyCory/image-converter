@@ -7,6 +7,7 @@
       "Bash(gh auth:*)",
       "Bash(gh pr:*)",
       "Bash(gh pr view *)",
+      "Bash(git add:*)",
       "Bash(git ls-files *)",
       "Bash(grep:*)",
       "Bash(ls -la /home/curiouslycory/workspace/active-personal/image-converter*)",
