@@ -15,6 +15,7 @@ import { PlusIcon, TrashIcon } from "lucide-react";
 import CopyText from "~/components/ui/copy-text";
 
 interface Attribute {
+  id: string;
   trait_type: string;
   value: string | number;
   display_type?:
@@ -32,7 +33,13 @@ interface NFTMetadata {
   attributes: Attribute[];
 }
 
-export default function NFTMetadataBuilder() {
+interface NFTMetadataBuilderProps {
+  headingLevel?: "h1" | "h2";
+}
+
+export default function NFTMetadataBuilder({
+  headingLevel: Heading = "h1",
+}: NFTMetadataBuilderProps) {
   const [metadata, setMetadata] = useState<NFTMetadata>({
     description: "",
     image: "",
@@ -41,7 +48,11 @@ export default function NFTMetadataBuilder() {
   });
 
   const jsonDataUri = useMemo(() => {
-    const jsonString = JSON.stringify(metadata, null, 2);
+    const cleaned = {
+      ...metadata,
+      attributes: metadata.attributes.map(({ id: _, ...rest }) => rest),
+    };
+    const jsonString = JSON.stringify(cleaned, null, 2);
     return `data:application/json;charset=utf-8,${encodeURIComponent(jsonString)}`;
   }, [metadata]);
 
@@ -53,7 +64,7 @@ export default function NFTMetadataBuilder() {
   const addAttribute = () => {
     setMetadata((prev) => ({
       ...prev,
-      attributes: [...prev.attributes, { trait_type: "", value: "" }],
+      attributes: [...prev.attributes, { id: crypto.randomUUID(), trait_type: "", value: "" }],
     }));
   };
 
@@ -78,8 +89,8 @@ export default function NFTMetadataBuilder() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 rounded-lg bg-white p-6 shadow-md">
-      <h1 className="mb-4 text-2xl font-bold">NFT Metadata Builder</h1>
+    <div className="mx-auto max-w-2xl space-y-6 rounded-lg border border-border bg-card text-card-foreground p-6 shadow-sm">
+      <Heading className="mb-4 text-2xl font-bold text-primary">NFT Metadata Builder</Heading>
 
       <div className="space-y-4">
         <div>
@@ -115,7 +126,7 @@ export default function NFTMetadataBuilder() {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Attributes</h2>
+          <h2 className="text-xl font-semibold text-primary">Attributes</h2>
           <Button onClick={addAttribute} size="sm">
             <PlusIcon className="mr-2 h-4 w-4" />
             Add Attribute
@@ -123,7 +134,7 @@ export default function NFTMetadataBuilder() {
         </div>
 
         {metadata.attributes.map((attr, index) => (
-          <div key={index} className="flex items-end space-x-2">
+          <div key={attr.id} className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1">
               <Label htmlFor={`trait_type_${index}`}>Trait Type</Label>
               <Input
@@ -169,6 +180,7 @@ export default function NFTMetadataBuilder() {
             <Button
               variant="destructive"
               size="icon"
+              className="min-h-11 min-w-11"
               onClick={() => removeAttribute(index)}
             >
               <TrashIcon className="h-4 w-4" />
@@ -178,7 +190,7 @@ export default function NFTMetadataBuilder() {
       </div>
 
       <div className="mt-6">
-        <h2 className="mb-2 text-xl font-semibold">Generated JSON</h2>
+        <h2 className="mb-2 text-xl font-semibold text-primary">Generated JSON</h2>
         <CopyText value={jsonDataUri} />
       </div>
     </div>

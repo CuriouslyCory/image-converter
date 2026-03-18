@@ -1,6 +1,7 @@
 "use client";
-import { DownloadIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { DownloadIcon, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import CopyText from "~/components/ui/copy-text";
 import { Label } from "~/components/ui/label";
@@ -10,12 +11,39 @@ import { api } from "~/trpc/react";
 
 type ConversionType = "webp" | "ico" | "png" | "jpeg";
 
-export default function ConverterComponent() {
-  const [files, setFiles] = useState<File[]>([]);
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+  "image/tiff",
+];
+
+interface FileWithId {
+  id: string;
+  file: File;
+}
+
+interface ConvertedImage {
+  id: string;
+  src: string;
+  originalName: string;
+}
+
+interface ConverterComponentProps {
+  headingLevel?: "h1" | "h2";
+}
+
+export default function ConverterComponent({
+  headingLevel: Heading = "h1",
+}: ConverterComponentProps) {
+  const [files, setFiles] = useState<FileWithId[]>([]);
   const [base64, setBase64] = useState<string>("");
   const [conversionType, setConversionType] = useState<ConversionType>("webp");
   const [quality, setQuality] = useState(80);
-  const [convertedImages, setConvertedImages] = useState<string[]>([]);
+  const [convertedImages, setConvertedImages] = useState<ConvertedImage[]>([]);
 
   const convertImageMutation = api.convert.convertImage.useMutation();
 
@@ -30,56 +58,81 @@ export default function ConverterComponent() {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      setFiles(Array.from(event.target.files));
+      const selected = Array.from(event.target.files);
+      const invalid = selected.filter(
+        (f) => !ALLOWED_TYPES.includes(f.type) || f.size > MAX_FILE_SIZE,
+      );
+      if (invalid.length > 0) {
+        toast.error(
+          "Some files were rejected. Max size: 10MB. Allowed types: PNG, JPEG, GIF, WebP, BMP, TIFF.",
+        );
+      }
+      const valid = selected
+        .filter(
+          (f) => ALLOWED_TYPES.includes(f.type) && f.size <= MAX_FILE_SIZE,
+        )
+        .map((file) => ({
+          id: `${file.name}-${file.size}-${file.lastModified}`,
+          file,
+        }));
+      setFiles(valid);
     }
   };
 
   const convertImages = async () => {
-    const converted = await Promise.all(
-      files.map(async (file) => {
-        const base64 = await fileToBase64(file);
-        const result = await convertImageMutation.mutateAsync({
-          image: base64,
-          format: conversionType,
-          quality: conversionType === "webp" ? quality : undefined,
-        });
-        return result;
-      }),
-    );
-    setConvertedImages(converted);
+    try {
+      const converted = await Promise.all(
+        files.map(async (fileWithId) => {
+          const b64 = await fileToBase64(fileWithId.file);
+          const result = await convertImageMutation.mutateAsync({
+            image: b64,
+            format: conversionType,
+            quality: conversionType === "webp" ? quality : undefined,
+          });
+          return {
+            id: fileWithId.id,
+            src: result,
+            originalName: fileWithId.file.name,
+          };
+        }),
+      );
+      setConvertedImages(converted);
+
+      const base64Strings = await Promise.all(
+        files.map((f) => fileToBase64(f.file)),
+      );
+      setBase64(base64Strings.join("\n"));
+
+      toast.success(`Successfully converted ${converted.length} image(s)`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to convert images. Please try again.",
+      );
+    }
   };
 
-  useEffect(() => {
-    const base64Files = files.map(async (file) => {
-      return await fileToBase64(file);
-    });
-    Promise.all(base64Files)
-      .then((base64) => {
-        setBase64(base64.join("\n"));
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  }, [files]);
-
   return (
-    <div className="mx-auto mt-10 max-w-md rounded-lg bg-white p-6 shadow-md">
-      <h1 className="mb-4 text-2xl font-bold">Image Converter</h1>
+    <div className="mx-auto mt-10 max-w-2xl rounded-lg border border-border bg-card text-card-foreground p-4 sm:p-6 shadow-sm">
+      <Heading className="mb-4 text-2xl font-bold text-primary">Image Converter</Heading>
       <div className="mb-4">
+        <Label htmlFor="file-upload" className="sr-only">Choose image files</Label>
         <input
+          id="file-upload"
           type="file"
           onChange={handleFileChange}
           accept="image/*"
           multiple
-          className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-primary/80"
+          className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:file:bg-primary/80"
         />
       </div>
       {files.length > 0 && (
         <div className="mt-4">
           <p>Selected files:</p>
           <ul>
-            {files.map((file, index) => (
-              <li key={index}>{file.name}</li>
+            {files.map((fileWithId) => (
+              <li key={fileWithId.id}>{fileWithId.file.name}</li>
             ))}
           </ul>
         </div>
@@ -123,39 +176,60 @@ export default function ConverterComponent() {
       <Button
         onClick={convertImages}
         className="mt-4"
-        disabled={convertImageMutation.isPending}
+        disabled={convertImageMutation.isPending || files.length === 0}
       >
-        {convertImageMutation.isPending ? "Converting..." : "Convert"}
+        {convertImageMutation.isPending ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Converting...
+          </>
+        ) : (
+          "Convert"
+        )}
       </Button>
-      {convertedImages.length > 0 && (
-        <div className="mt-4">
-          <p>Converted Images:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {convertedImages.map((img, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={img}
-                  alt={`Converted ${index}`}
-                  className="h-auto w-full rounded object-cover"
-                />
-                <a
-                  href={img}
-                  download={`converted-${index}.${conversionType}`}
-                  className="absolute right-1 top-1 rounded-full bg-white p-1"
-                >
-                  <DownloadIcon size={16} />
-                </a>
-              </div>
-            ))}
+      {files.length === 0 && convertedImages.length === 0 && (
+        <div className="mt-6 rounded-md border border-dashed border-primary/30 bg-accent/30 p-8 text-center">
+          <p className="text-muted-foreground">
+            Upload one or more images to convert them to your desired format.
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Supported: PNG, JPEG, GIF, WebP, BMP, TIFF (max 10MB each)
+          </p>
+        </div>
+      )}
+      <div aria-busy={convertImageMutation.isPending} aria-live="polite">
+        {convertedImages.length > 0 && (
+          <div className="mt-4">
+            <p>Converted Images:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {convertedImages.map((img) => (
+                <div key={img.id} className="relative">
+                  <img
+                    src={img.src}
+                    alt={`${img.originalName} converted to ${conversionType}`}
+                    className="h-auto max-h-64 w-full rounded object-contain"
+                  />
+                  <a
+                    href={img.src}
+                    download={`${img.originalName.split(".")[0]}.${conversionType}`}
+                    className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+                    aria-label={`Download ${img.originalName}`}
+                    rel="noopener noreferrer"
+                  >
+                    <DownloadIcon size={20} />
+                  </a>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-      {base64.length > 0 && (
-        <div className="mt-6">
-          <Label>Base64</Label>
-          <CopyText value={base64}></CopyText>
-        </div>
-      )}
+        )}
+        {base64.length > 0 && (
+          <div className="mt-6">
+            <Label>Base64</Label>
+            <CopyText value={base64}></CopyText>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

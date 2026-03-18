@@ -25,7 +25,8 @@
       "WebFetch(domain:platejs.org)",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:skills.sh)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(pnpm add:*)"
     ]
   }
 }
