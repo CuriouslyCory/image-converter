@@ -182,7 +182,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "These are mostly minor/patch updates. The sharp 0.33→0.34 update is the one to watch for API changes — verify the sharp(buffer).webp()/.png()/.jpeg() patterns in the convert router. Radix UI components may need forwardRef pattern updates for React 19 compatibility."
     }
   ]

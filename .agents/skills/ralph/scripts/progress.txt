@@ -162,3 +162,25 @@ Started: Tue Mar 17 04:07:53 PM MST 2026
   - Must add `{ ignores: ["eslint.config.mjs"] }` to avoid the config file being type-checked by itself
   - eslint-config-next v16 includes stricter react-hooks rules (immutability, set-state-in-effect) that may flag pre-existing code
 ---
+
+## 2026-03-17 - US-009
+- Upgraded sharp from ^0.33.5 to ^0.34.5
+- Upgraded zod from ^3.23.3 to ^3.25.76 (stayed on ^3.x as specified)
+- Upgraded superjson from ^2.2.1 to ^2.2.6
+- Upgraded geist from ^1.3.0 to ^1.7.0
+- Upgraded lucide-react from ^0.439.0 to ^0.577.0
+- Upgraded class-variance-authority from ^0.7.0 to ^0.7.1
+- Upgraded tailwind-merge from ^2.5.2 to ^3.5.0 (major version bump)
+- Upgraded all @radix-ui/* packages to latest React 19-compatible versions
+- Upgraded prettier from ^3.3.2 to ^3.8.1
+- Upgraded @types/node from ^20.14.10 to ^22.0.0
+- Upgraded typescript from ^5.8.3 to ^5.9.3
+- clsx (^2.1.1), image-to-ico (^1.0.1), server-only (^0.0.1) were already at latest
+- Files changed: package.json, pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - sharp 0.33→0.34 had no breaking changes for basic webp/png/jpeg/toBuffer API usage
+  - tailwind-merge 2→3 major version bump had no breaking changes for the `cn()` utility pattern used in this project
+  - Radix UI component updates were minor — `forwardRef` pattern still works with React 19 (Radix hasn't dropped it yet)
+  - zod 4.x is available but staying on 3.x per PRD — would require significant migration (different import paths, API changes)
+  - All dependency upgrades were purely package.json version bumps with no source code changes required
+---
