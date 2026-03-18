@@ -27,7 +27,8 @@ export default function CopyText({ value }: ReadOnlyTextAreaProps) {
       <Textarea
         value={value}
         readOnly
-        className="min-h-[100px] resize-none pr-10"
+        aria-label="Copyable text content"
+        className="min-h-25 resize-none pr-10"
       />
       <Button
         onClick={copyToClipboard}
@@ -36,7 +37,7 @@ export default function CopyText({ value }: ReadOnlyTextAreaProps) {
         size="icon"
       >
         {isCopied ? (
-          <CheckIcon className="h-4 w-4 text-green-500" />
+          <CheckIcon className="h-4 w-4 text-primary" />
         ) : (
           <CopyIcon className="h-4 w-4" />
         )}

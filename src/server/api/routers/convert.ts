@@ -10,7 +10,7 @@ export const convertRouter = createTRPCRouter({
   convertImage: publicProcedure
     .input(
       z.object({
-        image: z.string(),
+        image: z.string().max(15_000_000, "Image exceeds maximum size of ~10MB"),
         format: z.enum(["webp", "ico", "png", "jpeg"]),
         quality: z.number().min(1).max(100).optional(),
       }),
