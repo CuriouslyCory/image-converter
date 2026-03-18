@@ -1,0 +1,189 @@
+{
+  "project": "image-converter",
+  "branchName": "feat/dependency-upgrade",
+  "description": "Full dependency upgrade to latest versions: Next.js 16, React 19, Prisma 7, next-auth v5, tRPC stable v11, Tailwind CSS 4, ESLint 9 flat config",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Upgrade React 18 to 19 and Next.js 14 to 16",
+      "description": "As a developer, I want to upgrade React and Next.js to their latest major versions so the project uses Turbopack and React 19 features.",
+      "acceptanceCriteria": [
+        "In package.json: react and react-dom updated to ^19.2.4",
+        "In package.json: next updated to ^16.1.0",
+        "In package.json: @types/react updated to ^19.0.0 and @types/react-dom updated to ^19.0.0",
+        "In package.json: eslint-config-next updated to ^16.1.0",
+        "In package.json: @t3-oss/env-nextjs updated to latest compatible version",
+        "In src/trpc/server.ts: headers() call updated to await headers() (async in Next.js 15+)",
+        "next.config.js renamed to next.config.ts with TypeScript NextConfig type",
+        "pnpm install completes without errors",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Next.js 16 requires Node.js >= 20.9.0. The headers() function from next/headers became async in Next.js 15. The createContext function in src/trpc/server.ts wraps the headers() call and must handle the async change."
+    },
+    {
+      "id": "US-002",
+      "title": "Upgrade Prisma 6 to 7 - Schema and Config",
+      "description": "As a developer, I want to update the Prisma schema and create the new prisma.config.ts so the project is configured for Prisma 7.",
+      "acceptanceCriteria": [
+        "In package.json: prisma (dev) and @prisma/client updated to ^7.5.0",
+        "In package.json: @prisma/adapter-ppg added as dependency",
+        "In package.json: tsx added as dev dependency",
+        "In prisma/schema.prisma: generator provider changed from prisma-client-js to prisma-client",
+        "In prisma/schema.prisma: output = \"./generated\" added to generator client block",
+        "In prisma/schema.prisma: url = env(\"DATABASE_URL\") removed from datasource db block",
+        "In prisma/schema.prisma: provider = \"postgresql\" preserved in datasource db block",
+        "Any previewFeatures = [\"driverAdapters\"] removed from schema if present",
+        "prisma.config.ts created at repo root using defineConfig and env from prisma/config with datasource.url set to env(\"DATABASE_URL\")",
+        "pnpm install completes without errors",
+        "prisma generate succeeds and outputs to ./prisma/generated/",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Follow the official Prisma v7 migration guide. The prisma.config.ts must import dotenv/config at the top. The generator output path ./generated means the client is generated to prisma/generated/. Do NOT change src/server/db.ts yet - that is the next story."
+    },
+    {
+      "id": "US-003",
+      "title": "Upgrade Prisma 7 - Rewrite DB Client with Driver Adapter",
+      "description": "As a developer, I want to rewrite the Prisma client initialization to use the v7 driver adapter pattern so database connections use direct TCP.",
+      "acceptanceCriteria": [
+        "src/server/db.ts rewritten to use PrismaPPG adapter from @prisma/adapter-ppg",
+        "PrismaClient import path in src/server/db.ts changed from @prisma/client to the generated client path (prisma/generated/prisma/client.js or equivalent via path alias)",
+        "PrismaPPG adapter instantiated with connectionString from env.DATABASE_URL",
+        "Dev singleton pattern (globalForPrisma) preserved in src/server/db.ts",
+        "Logging config preserved: query+error+warn in dev, error only in production",
+        "All other files importing types from @prisma/client updated to use the generated client path",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "The generated client path depends on the output setting in schema.prisma. With output = \"./generated\", the import should be something like ../../prisma/generated/prisma/client.js relative to src/server/db.ts, or use the ~ path alias if it resolves correctly. Check src/server/auth.ts and src/server/api/trpc.ts for any @prisma/client imports that need updating."
+    },
+    {
+      "id": "US-004",
+      "title": "Upgrade next-auth v4 to v5 - Rewrite Auth Config",
+      "description": "As a developer, I want to rewrite the auth configuration to use the Auth.js v5 NextAuth() pattern so the project uses the modern universal auth() API.",
+      "acceptanceCriteria": [
+        "In package.json: next-auth updated to latest v5 beta (next-auth@beta)",
+        "In package.json: @auth/prisma-adapter updated to latest compatible version",
+        "src/server/auth.ts rewritten to use NextAuth() function that exports { handlers, auth, signIn, signOut }",
+        "Discord provider preserved with env.DISCORD_CLIENT_ID and env.DISCORD_CLIENT_SECRET",
+        "PrismaAdapter(db) preserved using @auth/prisma-adapter",
+        "Session callback preserved: adds user.id to session object",
+        "Module augmentation updated for next-auth v5 types",
+        "src/app/api/auth/[...nextauth]/route.ts simplified to: import { handlers } from ~/server/auth and export const { GET, POST } = handlers",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Auth.js v5 uses a different API pattern. Instead of exporting authOptions and calling getServerSession(authOptions), you call NextAuth({ providers, adapter, callbacks }) which returns { handlers, auth, signIn, signOut }. The auth() function is the universal session getter that replaces getServerSession."
+    },
+    {
+      "id": "US-005",
+      "title": "Update Auth Consumers - tRPC Context and Env Vars",
+      "description": "As a developer, I want to update all code that consumes the auth API so it uses the new v5 auth() function and updated environment variable names.",
+      "acceptanceCriteria": [
+        "In src/server/api/trpc.ts: import changed from getServerAuthSession to auth from ~/server/auth",
+        "In src/server/api/trpc.ts: session retrieval changed from await getServerAuthSession() to await auth()",
+        "In src/server/api/trpc.ts: unused import * as trpcNext from @trpc/server/adapters/next removed",
+        "In src/env.js: NEXTAUTH_SECRET renamed to AUTH_SECRET in server schema and runtimeEnv",
+        "In src/env.js: NEXTAUTH_URL renamed to AUTH_URL in server schema and runtimeEnv",
+        "If .env or .env.example exists: variable names updated from NEXTAUTH_SECRET to AUTH_SECRET and NEXTAUTH_URL to AUTH_URL",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Auth.js v5 uses AUTH_SECRET instead of NEXTAUTH_SECRET and AUTH_URL instead of NEXTAUTH_URL. The env validation in src/env.js must be updated to match. The tRPC context in src/server/api/trpc.ts calls getServerAuthSession() which must be changed to auth()."
+    },
+    {
+      "id": "US-006",
+      "title": "Upgrade tRPC from RC to Stable v11",
+      "description": "As a developer, I want to upgrade tRPC from release candidate 11.0.0-rc.446 to stable v11 so the project uses the production-ready API layer.",
+      "acceptanceCriteria": [
+        "In package.json: @trpc/client updated to ^11.6.0",
+        "In package.json: @trpc/server updated to ^11.6.0",
+        "In package.json: @trpc/react-query updated to ^11.6.0",
+        "In package.json: @tanstack/react-query updated to ^5.90.21",
+        "If unstable_httpBatchStreamLink was renamed to httpBatchStreamLink in stable v11, update the import in src/trpc/react.tsx",
+        "Verify createHydrationHelpers import from @trpc/react-query/rsc works in src/trpc/server.ts (fix if needed)",
+        "Verify superjson transformer config in src/server/api/trpc.ts still works (fix if needed)",
+        "pnpm install completes without errors",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "The classic @trpc/react-query integration is still supported in tRPC v11 stable, so no need to migrate to @trpc/tanstack-react-query. The main risk is unstable_ prefixed APIs being renamed. Check the tRPC v11 changelog for any breaking changes from the RC."
+    },
+    {
+      "id": "US-007",
+      "title": "Upgrade Tailwind CSS 3 to 4",
+      "description": "As a developer, I want to upgrade Tailwind CSS from v3 to v4 so the project uses the new CSS-first configuration approach.",
+      "acceptanceCriteria": [
+        "In package.json: tailwindcss updated to ^4.0.0",
+        "In package.json: @tailwindcss/postcss added if needed for Next.js PostCSS integration",
+        "postcss removed from package.json if only used for Tailwind, OR postcss config updated to use @tailwindcss/postcss",
+        "tailwindcss-animate removed or replaced with Tailwind v4 compatible alternative",
+        "prettier-plugin-tailwindcss updated to latest in package.json",
+        "Tailwind config file (tailwind.config.ts or similar) deleted or contents migrated to CSS-first @theme config",
+        "postcss.config.js or postcss.config.cjs deleted or updated to use @tailwindcss/postcss plugin",
+        "src/app/globals.css updated: replace @tailwind directives with @import \"tailwindcss\" and move any custom theme to @theme block",
+        "All existing utility classes verified to compile (fix any v4 renames if needed)",
+        "pnpm install completes without errors",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Tailwind CSS 4 uses CSS-first configuration instead of JS config files. The @tailwind base/components/utilities directives are replaced with @import \"tailwindcss\". Custom theme values move into @theme {} blocks in CSS. Some utility classes may have been renamed. Check tailwind.config.ts for any custom theme configuration that needs to be migrated."
+    },
+    {
+      "id": "US-008",
+      "title": "Upgrade ESLint 8 to 9 with Flat Config",
+      "description": "As a developer, I want to upgrade ESLint from v8 to v9 with the new flat config format so the project uses modern linting configuration.",
+      "acceptanceCriteria": [
+        "In package.json: eslint updated to ^9.0.0",
+        "In package.json: @typescript-eslint/eslint-plugin and @typescript-eslint/parser updated to latest compatible versions",
+        ".eslintrc.cjs deleted",
+        "eslint.config.js or eslint.config.mjs created with ESLint 9 flat config format",
+        "next/core-web-vitals config included (from eslint-config-next)",
+        "typescript-eslint recommended-type-checked and stylistic-type-checked configs included",
+        "All existing custom rules preserved: consistent-type-imports with inline-type-imports, no-unused-vars with argsIgnorePattern ^_, require-await off, no-misused-promises with checksVoidReturn attributes false",
+        "pnpm lint runs without config errors (pre-existing code warnings are acceptable)",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "ESLint 9 uses flat config (eslint.config.js) instead of .eslintrc files. The eslint-config-next package for Next.js 16 should support flat config. If not, use @eslint/eslintrc compatibility wrapper. The typescript-eslint package provides a unified way to include TS rules in flat config."
+    },
+    {
+      "id": "US-009",
+      "title": "Upgrade Remaining Dependencies",
+      "description": "As a developer, I want to upgrade all remaining dependencies to their latest compatible versions for security and feature improvements.",
+      "acceptanceCriteria": [
+        "In package.json: sharp updated to ^0.34.5",
+        "In package.json: zod updated to latest ^3.x",
+        "In package.json: superjson updated to latest ^2.x",
+        "In package.json: geist updated to latest",
+        "In package.json: lucide-react updated to latest",
+        "In package.json: class-variance-authority updated to latest",
+        "In package.json: clsx updated to latest",
+        "In package.json: tailwind-merge updated to latest",
+        "In package.json: image-to-ico updated to latest",
+        "In package.json: server-only updated to latest",
+        "In package.json: all @radix-ui/* packages updated to latest React 19-compatible versions",
+        "In package.json: prettier updated to latest",
+        "In package.json: @types/node updated to ^22.x",
+        "In package.json: typescript updated to latest ^5.x",
+        "Sharp API in src/server/api/routers/convert.ts verified (webp/png/jpeg/ico conversion still works)",
+        "Radix UI wrapper components in src/components/ui/ updated if forwardRef patterns changed for React 19",
+        "pnpm install completes without errors",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "These are mostly minor/patch updates. The sharp 0.33→0.34 update is the one to watch for API changes — verify the sharp(buffer).webp()/.png()/.jpeg() patterns in the convert router. Radix UI components may need forwardRef pattern updates for React 19 compatibility."
+    }
+  ]
+}

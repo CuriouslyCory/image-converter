@@ -1,0 +1,186 @@
+# Ralph Progress Log
+Started: Tue Mar 17 04:07:53 PM MST 2026
+
+## Codebase Patterns
+- Next.js config is at `next.config.ts` (TypeScript, uses `NextConfig` type)
+- tRPC server context is in `src/trpc/server.ts`, uses `cache()` wrapper from React
+- Environment validation is in `src/env.js` and imported in `next.config.ts`
+- Project uses `~` path alias for `src/` directory
+- This is a T3 stack app (Next.js + tRPC + Prisma + NextAuth)
+- Prisma 7 generated client lives at `prisma/generated/client` — import PrismaClient from there, not `@prisma/client` (do NOT use `.js` extension — Turbopack can't resolve it)
+- Tailwind CSS 4 uses CSS-first config: `@import "tailwindcss"` in globals.css, `@theme inline {}` for custom theme values, `@custom-variant dark` for dark mode
+- PostCSS config uses `@tailwindcss/postcss` plugin (not `tailwindcss`)
+- `tailwindcss-animate` replaced with `tw-animate-css` (v4 compatible) — import via `@import "tw-animate-css"` in globals.css
+- Next.js 16 config: use `import "./src/env.js"` (not `await import()`) — top-level await breaks Turbopack's require()
+- Prisma 7 requires a driver adapter (e.g., `PrismaPg` from `@prisma/adapter-pg`) passed to PrismaClient constructor
+- `prisma.config.ts` at repo root handles datasource URL and migration config (replaces `url` in schema.prisma)
+- Use `@prisma/adapter-pg` for regular PostgreSQL, NOT `@prisma/adapter-ppg` (that's for Prisma Postgres managed service)
+- Auth is next-auth v5 (Auth.js): `NextAuth()` returns `{ handlers, auth, signIn, signOut }` — use `auth()` instead of `getServerSession()`
+- Discord provider in v5: `import Discord from "next-auth/providers/discord"` (not `DiscordProvider`)
+- Auth route handler: `export const { GET, POST } = handlers` from `~/server/auth`
+- Auth.js v5 env vars: use `AUTH_SECRET` and `AUTH_URL` (not `NEXTAUTH_*`)
+- tRPC v11 stable: use `httpBatchStreamLink` (not `unstable_httpBatchStreamLink`)
+- ESLint 9 flat config in `eslint.config.mjs` — uses `typescript-eslint` unified package (not separate `@typescript-eslint/parser` + `@typescript-eslint/eslint-plugin`)
+- `next lint` removed in Next.js 16 — use `eslint .` directly in lint script
+- `eslint-config-next` v16 exports flat config arrays (can be spread into `tseslint.config()`)
+
+---
+
+## 2026-03-17 - US-001
+- Upgraded react/react-dom from ^18.3.1 to ^19.2.4
+- Upgraded next from 14.2.35 to ^16.1.0
+- Upgraded @types/react to ^19.0.0, @types/react-dom to ^19.0.0
+- Upgraded eslint-config-next to ^16.1.0
+- Upgraded @t3-oss/env-nextjs to ^0.11.1
+- Made `headers()` call async in `src/trpc/server.ts` (Next.js 15+ requires await)
+- Renamed `next.config.js` to `next.config.ts` with typed `NextConfig`
+- Files changed: package.json, pnpm-lock.yaml, src/trpc/server.ts, next.config.js → next.config.ts
+- **Learnings for future iterations:**
+  - `headers()` from `next/headers` is async in Next.js 15+, must be awaited
+  - The `createContext` function in `src/trpc/server.ts` wraps `headers()` — any changes to Next.js async APIs affect this
+  - Peer dependency warnings for eslint (needs ^9) and next-auth (needs next ^15) are expected — will be resolved in later stories
+  - sharp auto-rebuilt successfully for the new environment
+---
+
+## 2026-03-17 - US-002
+- Upgraded prisma (dev) and @prisma/client from ^6.11.1 to ^7.5.0
+- Added @prisma/adapter-pg ^7.5.0 as dependency (corrected from PRD's adapter-ppg — that's for Prisma Postgres managed service)
+- Added tsx ^4.19.0 as dev dependency, dotenv ^16.4.0 as dev dependency
+- Changed generator provider from `prisma-client-js` to `prisma-client` with `output = "./generated"`
+- Removed `url = env("DATABASE_URL")` from datasource db block (now in prisma.config.ts)
+- Created `prisma.config.ts` at repo root using `defineConfig` and `env` from `prisma/config`
+- Updated `src/server/db.ts` import from `@prisma/client` to generated client path and added PrismaPg adapter (required for Prisma 7 typecheck)
+- Added `/prisma/generated` to `.gitignore`
+- `prisma generate` succeeds, outputs to `prisma/generated/`
+- Typecheck passes
+- Files changed: package.json, pnpm-lock.yaml, prisma/schema.prisma, prisma.config.ts (new), src/server/db.ts, .gitignore
+- **Learnings for future iterations:**
+  - PRD specified `@prisma/adapter-ppg` but that's for Prisma Postgres (managed service). Regular PostgreSQL needs `@prisma/adapter-pg`
+  - Prisma 7 PrismaClient REQUIRES a driver adapter — you can't instantiate without one, so db.ts had to be updated in this story despite the PRD note
+  - The generated client path with `output = "./generated"` is `prisma/generated/client.js` (relative to schema location)
+  - `@prisma/client` re-exports from `.prisma/client/default` which doesn't exist when custom output is set — so imports MUST point to generated path
+  - `dotenv` package needed for `import "dotenv/config"` in prisma.config.ts
+---
+
+## 2026-03-17 - US-003
+- All acceptance criteria were already met by US-002 implementation
+- US-002 had to update src/server/db.ts with PrismaPg adapter and generated client import because Prisma 7 PrismaClient requires a driver adapter to even typecheck
+- Verified: no remaining `@prisma/client` imports in src/ — all use generated client path
+- Verified: prisma generate succeeds, typecheck passes
+- No additional files changed (beyond prd.json and progress.txt)
+- **Learnings for future iterations:**
+  - When PRD splits work across stories with tight dependencies (like Prisma schema + client), earlier stories may need to pull in later story work to maintain a green build
+  - Always verify with `grep` that no stale imports remain after a migration
+---
+
+## 2026-03-17 - US-004
+- Upgraded next-auth from ^4.24.7 to 5.0.0-beta.30 (next-auth@beta)
+- Upgraded @auth/prisma-adapter from ^1.6.0 to ^2.11.1
+- Rewrote src/server/auth.ts: replaced `authOptions` + `getServerAuthSession()` with `NextAuth()` returning `{ handlers, auth, signIn, signOut }`
+- Discord provider updated to v5 import pattern (`import Discord from "next-auth/providers/discord"`)
+- Module augmentation updated for next-auth v5 types (DefaultSession from "next-auth")
+- Simplified src/app/api/auth/[...nextauth]/route.ts to `export const { GET, POST } = handlers`
+- Updated src/server/api/trpc.ts: changed `getServerAuthSession()` to `auth()` and removed unused `trpcNext` import (required for typecheck to pass — tightly coupled to auth rewrite)
+- Typecheck passes
+- Files changed: package.json, pnpm-lock.yaml, src/server/auth.ts, src/app/api/auth/[...nextauth]/route.ts, src/server/api/trpc.ts
+- **Learnings for future iterations:**
+  - next-auth v5 PrismaAdapter no longer needs `as Adapter` cast — types align directly
+  - The `trpc.ts` context creator imports auth from `~/server/auth` — any auth API change requires updating trpc.ts simultaneously
+  - v5 still supports `NEXTAUTH_SECRET` and `NEXTAUTH_URL` env vars (aliased to `AUTH_SECRET`/`AUTH_URL`) but US-005 will rename them
+  - The `@trpc/server/adapters/next` import was unused in the App Router setup — safe to remove
+---
+
+## 2026-03-17 - US-005
+- Renamed `NEXTAUTH_SECRET` → `AUTH_SECRET` and `NEXTAUTH_URL` → `AUTH_URL` in src/env.js (both schema and runtimeEnv)
+- Updated .env.example with new variable names
+- Updated .env with new variable names
+- tRPC context changes (import auth, use auth(), remove trpcNext) were already done in US-004
+- Files changed: src/env.js, .env.example, .env
+- **Learnings for future iterations:**
+  - Auth.js v5 auto-aliases `NEXTAUTH_SECRET`/`NEXTAUTH_URL` to `AUTH_SECRET`/`AUTH_URL`, so the app works with either — but canonical names should be `AUTH_*`
+  - The tRPC context and auth API changes were tightly coupled to US-004 and were completed there, making this story mostly about env var renaming
+---
+
+## 2026-03-17 - US-006
+- Upgraded @trpc/client, @trpc/server, @trpc/react-query from 11.0.0-rc.446 to ^11.13.4
+- Upgraded @tanstack/react-query from ^5.50.0 to ^5.90.21
+- Renamed `unstable_httpBatchStreamLink` to `httpBatchStreamLink` in src/trpc/react.tsx (stable API name in v11)
+- Verified createHydrationHelpers from @trpc/react-query/rsc still works
+- Verified superjson transformer config in src/server/api/trpc.ts still works
+- pnpm install completes, typecheck passes
+- Files changed: package.json, pnpm-lock.yaml, src/trpc/react.tsx
+- **Learnings for future iterations:**
+  - In tRPC stable v11, `unstable_httpBatchStreamLink` was renamed to `httpBatchStreamLink` — the old name still exists as an alias but should be migrated
+  - The tRPC upgrade from RC to stable was straightforward with no breaking API changes beyond the unstable_ prefix removal
+  - `createHydrationHelpers` from `@trpc/react-query/rsc` works unchanged in stable v11
+---
+
+## 2026-03-17 - US-007
+- Upgraded tailwindcss from ^3.4.3 to ^4.2.1
+- Added @tailwindcss/postcss ^4.2.1 as dependency
+- Removed postcss (now bundled with @tailwindcss/postcss) and tailwindcss-animate from dependencies
+- Added tw-animate-css ^1.4.0 as tailwindcss-animate replacement for v4
+- Updated prettier-plugin-tailwindcss from ^0.6.5 to ^0.7.2
+- Deleted tailwind.config.ts — migrated all theme config to CSS-first @theme inline block in globals.css
+- Updated postcss.config.cjs to use @tailwindcss/postcss plugin
+- Rewrote src/styles/globals.css: replaced @tailwind directives with @import "tailwindcss", added @import "tw-animate-css", @custom-variant dark, @theme inline block with all color/radius/font mappings
+- Fixed pre-existing next.config.ts issue: changed `await import("./src/env.js")` to `import "./src/env.js"` (top-level await broke Turbopack)
+- Fixed pre-existing Prisma import: changed `client.js` to `client` in src/server/db.ts (Turbopack can't resolve .js→.ts)
+- pnpm install, typecheck, and next build all pass
+- Files changed: package.json, pnpm-lock.yaml, tailwind.config.ts (deleted), postcss.config.cjs, src/styles/globals.css, next.config.ts, src/server/db.ts
+- **Learnings for future iterations:**
+  - Tailwind v4 uses CSS-first config: no more JS config file, everything in @theme blocks in CSS
+  - `tailwindcss-animate` is NOT v4 compatible — use `tw-animate-css` and `@import "tw-animate-css"` in CSS
+  - Tailwind v4 dark mode with class strategy requires `@custom-variant dark (&:is(.dark *))`
+  - Color tokens in @theme must use `--color-*` naming convention for Tailwind to generate utility classes (e.g. `--color-primary` generates `bg-primary`, `text-primary`, etc.)
+  - `postcss` is no longer a direct dependency — `@tailwindcss/postcss` bundles it
+  - Turbopack (Next.js 16 default bundler) does NOT resolve `.js` extensions to `.ts` files like TypeScript does — always use extensionless imports for TS files
+  - Top-level `await` in next.config.ts breaks Turbopack's require() — use synchronous `import` instead
+  - Manual browser verification still needed for visual styling confirmation
+---
+
+## 2026-03-17 - US-008
+- Upgraded eslint from ^8.57.0 to ^9.39.4
+- Replaced `@typescript-eslint/eslint-plugin` + `@typescript-eslint/parser` with unified `typescript-eslint` ^8.57.1
+- Removed `@types/eslint` (no longer needed for ESLint 9)
+- Deleted `.eslintrc.cjs`, created `eslint.config.mjs` with ESLint 9 flat config format
+- Used `tseslint.config()` with `eslint-config-next/core-web-vitals` (already exports flat config in v16)
+- Included `recommendedTypeChecked` and `stylisticTypeChecked` from typescript-eslint
+- All custom rules preserved: consistent-type-imports, no-unused-vars with argsIgnorePattern, require-await off, no-misused-promises with checksVoidReturn attributes false
+- Updated lint script from `next lint` to `eslint .` (`next lint` removed in Next.js 16)
+- Fixed pre-existing code issues caught by new stricter rules:
+  - converter.tsx: moved `fileToBase64` declaration above its usage (react-hooks/immutability)
+  - nft-metadata-builder.tsx: replaced useEffect+setState with useMemo (react-hooks/set-state-in-effect)
+  - trpc.ts: used optional chain instead of `!ctx.session || !ctx.session.user` (prefer-optional-chain)
+- pnpm lint passes (0 errors, 2 pre-existing warnings), typecheck passes
+- Files changed: package.json, pnpm-lock.yaml, .eslintrc.cjs (deleted), eslint.config.mjs (new), src/app/_components/converter.tsx, src/app/_components/nft-metadata-builder.tsx, src/server/api/trpc.ts
+- **Learnings for future iterations:**
+  - `next lint` was removed in Next.js 16 — must use `eslint .` directly
+  - `eslint-config-next` v16 already exports flat config format (array of config objects), can be spread directly into `tseslint.config()`
+  - The unified `typescript-eslint` package replaces both `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin`
+  - Use `projectService: true` in parserOptions (replaces `project: true` for flat config)
+  - Must add `{ ignores: ["eslint.config.mjs"] }` to avoid the config file being type-checked by itself
+  - eslint-config-next v16 includes stricter react-hooks rules (immutability, set-state-in-effect) that may flag pre-existing code
+---
+
+## 2026-03-17 - US-009
+- Upgraded sharp from ^0.33.5 to ^0.34.5
+- Upgraded zod from ^3.23.3 to ^3.25.76 (stayed on ^3.x as specified)
+- Upgraded superjson from ^2.2.1 to ^2.2.6
+- Upgraded geist from ^1.3.0 to ^1.7.0
+- Upgraded lucide-react from ^0.439.0 to ^0.577.0
+- Upgraded class-variance-authority from ^0.7.0 to ^0.7.1
+- Upgraded tailwind-merge from ^2.5.2 to ^3.5.0 (major version bump)
+- Upgraded all @radix-ui/* packages to latest React 19-compatible versions
+- Upgraded prettier from ^3.3.2 to ^3.8.1
+- Upgraded @types/node from ^20.14.10 to ^22.0.0
+- Upgraded typescript from ^5.8.3 to ^5.9.3
+- clsx (^2.1.1), image-to-ico (^1.0.1), server-only (^0.0.1) were already at latest
+- Files changed: package.json, pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - sharp 0.33→0.34 had no breaking changes for basic webp/png/jpeg/toBuffer API usage
+  - tailwind-merge 2→3 major version bump had no breaking changes for the `cn()` utility pattern used in this project
+  - Radix UI component updates were minor — `forwardRef` pattern still works with React 19 (Radix hasn't dropped it yet)
+  - zod 4.x is available but staying on 3.x per PRD — would require significant migration (different import paths, API changes)
+  - All dependency upgrades were purely package.json version bumps with no source code changes required
+---
