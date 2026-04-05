@@ -19,6 +19,7 @@ const ALLOWED_TYPES = [
   "image/webp",
   "image/bmp",
   "image/tiff",
+  "image/svg+xml",
 ];
 
 interface FileWithId {
@@ -64,7 +65,7 @@ export default function ConverterComponent({
       );
       if (invalid.length > 0) {
         toast.error(
-          "Some files were rejected. Max size: 10MB. Allowed types: PNG, JPEG, GIF, WebP, BMP, TIFF.",
+          "Some files were rejected. Max size: 10MB. Allowed types: PNG, JPEG, GIF, WebP, BMP, TIFF, SVG.",
         );
       }
       const valid = selected
@@ -193,7 +194,7 @@ export default function ConverterComponent({
             Upload one or more images to convert them to your desired format.
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Supported: PNG, JPEG, GIF, WebP, BMP, TIFF (max 10MB each)
+            Supported: PNG, JPEG, GIF, WebP, BMP, TIFF, SVG (max 10MB each)
           </p>
         </div>
       )}
