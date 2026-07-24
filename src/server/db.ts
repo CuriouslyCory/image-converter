@@ -4,7 +4,11 @@ import { PrismaClient } from "../../prisma/generated/client";
 import { env } from "~/env";
 
 const createPrismaClient = () => {
-  const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+  const connectionString = env.DATABASE_URL.includes("?")
+    ? env.DATABASE_URL
+    : `${env.DATABASE_URL}?sslmode=no-verify`;
+
+  const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({
     adapter,
     log:
